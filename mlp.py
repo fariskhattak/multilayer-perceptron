@@ -41,23 +41,47 @@ class ActivationFunction(ABC):
 
 
 class Sigmoid(ActivationFunction):
-    pass
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        return 1 / (1 + np.exp(-x))
+    
+    def derivative(self, x: np.ndarray) -> np.ndarray:
+        sigmoid_x = self.forward(x)
+        return sigmoid_x * (1 - sigmoid_x)
 
 
 class Tanh(ActivationFunction):
-    pass
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        return (np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x))
 
+    def derivative(self, x: np.ndarray) -> np.ndarray:
+        tanh_x = self.forward(x)
+        return 1 - (tanh_x**2)
+    
 
 class Relu(ActivationFunction):
-    pass
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        return np.maximum(0, x)
+
+    def derivative(self, x: np.ndarray) -> np.ndarray:
+        return (x > 0).astype(float)
 
 
 class Softmax(ActivationFunction):
-    pass
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+        return exp_x / np.sum(exp_x, axis=1, keepdims=True)
 
+    def derivative(self, x: np.ndarray) -> np.ndarray:
+        # Basic formula, may need to use jacobian matrix for multiple classes
+        softmax_x = self.forward(x)
+        return softmax_x * (1 - softmax_x)
 
 class Linear(ActivationFunction):
-    pass
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        return x
+    
+    def derivative(self, x: np.ndarray) -> np.ndarray:
+        return np.ones_like(x)
 
 
 class LossFunction(ABC):
