@@ -120,3 +120,65 @@ class CrossEntropy(LossFunction):
         return y_pred - y_true
 
 
+class Layer:
+    def __init__(self, fan_in: int, fan_out: int, activation_function: ActivationFunction):
+        """
+        Initializes a layer of neurons
+
+        :param fan_in: number of neurons in previous (presynpatic) layer
+        :param fan_out: number of neurons in this layer
+        :param activation_function: instance of an ActivationFunction
+        """
+        self.fan_in = fan_in
+        self.fan_out = fan_out
+        self.activation_function = activation_function
+
+        # this will store the activations (forward prop)
+        self.activations = None
+        # this will store the delta term (dL_dPhi, backward prop)
+        self.delta = None
+
+        # Initialize weights and biaes
+        self.W = self.glorot_uniform(fan_in, fan_out)  # weights
+        self.b = np.zeros((1, fan_out))  # biases
+
+    def glorot_uniform(self, fan_in, fan_out):
+        """
+        Glorot Uniform Initialization.
+        
+        :param fan_in: Number of input units.
+        :param fan_out: Number of output units.
+        :return: Initialized weight matrix.
+        """
+        limit = np.sqrt(6 / (fan_in + fan_out))
+        return np.random.uniform(-limit, limit, (fan_in, fan_out))
+
+    def forward(self, h: np.ndarray):
+        """
+        Computes the activations for this layer
+
+        :param h: input to layer
+        :return: layer activations
+        """
+        z = h @ self.W + self.b
+        self.activations = self.activation_function.forward(z)
+
+        return self.activations
+
+    def backward(self, h: np.ndarray, delta: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Apply backpropagation to this layer and return the weight and bias gradients
+
+        :param h: input to this layer
+        :param delta: delta term from layer above
+        :return: (weight gradients, bias gradients)
+        """
+        z = h @ self.W + self.b
+        dO_dZ = self.activation_function.derivative(z)
+        
+        dL_dW = h.T @ (delta * dO_dZ)
+        dL_db = dL_db = np.sum(delta * dO_dZ, axis=0, keepdims=True)
+        self.delta = (delta * dO_dZ) @ self.W.T
+        return dL_dW, dL_db
+
+
