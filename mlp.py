@@ -14,7 +14,14 @@ def batch_generator(train_x, train_y, batch_size):
 
     :return tuple: (batch_x, batch_y) where batch_x has shape (B, f) and batch_y has shape (B, q). The last batch may be smaller.
     """
-    pass
+    num_samples = train_x.shape[0]
+    indices = np.arange(num_samples)
+    np.random.shuffle(indices)  # Shuffle indices to get different batches every epoch
+
+    for start_idx in range(0, num_samples, batch_size):
+        end_idx = min(start_idx + batch_size, num_samples)  # Make sure last batch isn't too large
+        batch_indices = indices[start_idx:end_idx]
+        yield train_x[batch_indices], train_y[batch_indices]
 
 
 class ActivationFunction(ABC):
@@ -251,7 +258,37 @@ class MultilayerPerceptron:
         :param epochs: number of epochs
         :return:
         """
-        training_losses = None
-        validation_losses = None
+        training_losses = []
+        validation_losses = []
 
+        for epoch in range(epochs):
+            epoch_loss = 0.0
+
+            for batch_x, batch_y in batch_generator(train_x, train_y, batch_size):
+                # Feedforward
+                y_pred = self.forward(batch_x)
+
+                # Compute loss and gradient
+                loss = loss_func.loss(batch_y, y_pred)
+                loss_grad = loss_func.derivative(batch_y, y_pred)
+                epoch_loss += np.sum(loss)  # Vectorized sum of batch loss
+
+                # Backpropagation
+                dl_dw_all, dl_db_all = self.backward(loss_grad, batch_x)
+
+                # Weight and bias update
+                for layer, dW, db in zip(self.layers, dl_dw_all, dl_db_all):
+                    layer.W -= dW * learning_rate
+                    layer.b -= db * learning_rate
+
+            # Average training loss for epoch
+            training_losses.append(epoch_loss / (train_x.shape[0]))
+
+            # Validation loss
+            val_pred = self.forward(val_x)
+            val_loss = loss_func.loss(val_y, val_pred)
+            validation_losses.append(np.mean(val_loss))
+
+            print(f"Epoch {epoch+1}/{epochs} - Training Loss: {training_losses[-1]:.4f} - Validation Loss: {validation_losses[-1]:.4f}")
+                
         return training_losses, validation_losses
