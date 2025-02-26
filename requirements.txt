@@ -1,2 +1,6 @@
 numpy==2.2.1
 matplotlib
+pandas
+ucimlrepo
+scikit-learn
+tensorflow
